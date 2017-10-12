@@ -51,6 +51,10 @@ const (
 	chainSideChanSize = 10
 )
 
+var (
+	ChainIdAddition = big.NewInt(100)
+)
+
 // Agent can register themself with the worker
 type Agent interface {
 	Work() chan<- *Work
@@ -520,8 +524,8 @@ func (env *Work) commitTransactions(mux *event.TypeMux, txs *types.TransactionsB
 		from, _ := types.Sender(env.signer, tx)
 		// Check whether the tx is replay protected. If we're not in the EIP155 hf
 		// phase, start ignoring the sender until we do.
-		if tx.Protected() && !env.config.IsEIP155(env.header.Number) {
-			log.Trace("Ignoring reply protected transaction", "hash", tx.Hash(), "eip155", env.config.EIP155Block)
+		if tx.Protected() && (!env.config.IsEIP155(env.header.Number) || !env.config.IsByzantium(env.header.Number) && tx.ChainId().Cmp(new(big.Int).Add(ChainIdAddition, env.signer.ChainId)) {
+			log.Trace("Ignoring reply protected transaction", "hash", tx.Hash(), "eip155", env.config.EIP155Block, "Byzantium", env.config.ByzantiumBlock)
 
 			txs.Pop()
 			continue
